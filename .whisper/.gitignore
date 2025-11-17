@@ -1,0 +1,6 @@
+# Models are downloaded on first use (142 MB for base.en)
+models/*.bin
+
+# Runtime files
+*.log
+*.pid

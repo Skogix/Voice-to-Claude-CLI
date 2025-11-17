@@ -1,0 +1,30 @@
+{
+  "name": "voice-to-claude-cli",
+  "description": "Record and transcribe voice input locally using whisper.cpp - 100% private, no API keys needed. Cross-platform Linux support (Arch, Ubuntu, Fedora, OpenSUSE) with Wayland and X11. Features F12 hold-to-speak daemon, one-shot voice input, interactive terminal mode, and automatic Claude Code Skill integration.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Niklas Aldervall",
+    "email": "niklas@aldervall.se"
+  },
+  "homepage": "https://github.com/aldervall/Voice-to-Claude-CLI",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aldervall/Voice-to-Claude-CLI.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "voice",
+    "transcription",
+    "whisper",
+    "speech-to-text",
+    "accessibility",
+    "privacy",
+    "local",
+    "offline",
+    "wayland",
+    "x11",
+    "kde",
+    "gnome"
+  ],
+  "category": "productivity"
+}

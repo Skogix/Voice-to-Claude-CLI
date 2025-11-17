@@ -1,0 +1,403 @@
+#!/usr/bin/env python3
+"""
+Hold-to-Speak Voice Input Daemon
+Monitors F12 key - hold to record, release to transcribe and type
+Cross-platform support for Wayland and X11, multiple desktop environments
+"""
+import sys
+import os
+import subprocess
+import threading
+import queue
+import time
+import numpy as np
+import sounddevice as sd
+import scipy.io.wavfile as wav
+import tempfile
+import requests
+from .voice_to_claude import VoiceTranscriber, SAMPLE_RATE, WHISPER_URL
+from .platform_detect import get_platform_info
+import evdev
+from evdev import ecodes
+
+# Configuration
+TRIGGER_KEY = ecodes.KEY_F12  # F12 key
+MIN_RECORDING_DURATION = 0.3  # Minimum seconds to avoid false triggers
+BEEP_ENABLED = True
+
+
+class StreamingRecorder:
+    """Records audio with dynamic start/stop capability"""
+
+    def __init__(self):
+        self.audio_queue = queue.Queue()
+        self.stream = None
+        self.is_recording = False
+        self.start_time = None
+
+    def start(self):
+        """Start recording audio"""
+        if self.is_recording:
+            return
+
+        # Clear any old data
+        while not self.audio_queue.empty():
+            self.audio_queue.get()
+
+        self.is_recording = True
+        self.start_time = time.time()
+
+        # Start audio input stream
+        self.stream = sd.InputStream(
+            samplerate=SAMPLE_RATE,
+            channels=1,
+            dtype='int16',
+            callback=self._audio_callback
+        )
+        self.stream.start()
+
+    def stop(self):
+        """Stop recording and return audio data"""
+        if not self.is_recording:
+            return None
+
+        self.is_recording = False
+
+        # Stop stream
+        if self.stream:
+            self.stream.stop()
+            self.stream.close()
+            self.stream = None
+
+        # Calculate duration
+        duration = time.time() - self.start_time if self.start_time else 0
+
+        # Check minimum duration
+        if duration < MIN_RECORDING_DURATION:
+            print(f"Recording too short ({duration:.2f}s), ignoring...")
+            return None
+
+        # Collect all audio chunks
+        audio_chunks = []
+        while not self.audio_queue.empty():
+            audio_chunks.append(self.audio_queue.get())
+
+        if not audio_chunks:
+            return None
+
+        # Concatenate all chunks
+        audio_data = np.concatenate(audio_chunks, axis=0)
+        return audio_data
+
+    def _audio_callback(self, indata, frames, time_info, status):
+        """Callback function for audio stream"""
+        if status:
+            print(f"Audio status: {status}", file=sys.stderr)
+        if self.is_recording:
+            self.audio_queue.put(indata.copy())
+
+
+class HoldToSpeakDaemon:
+    """Main daemon class for hold-to-speak functionality"""
+
+    def __init__(self):
+        # Don't initialize transcriber yet - will do it after ensuring server is running
+        self.transcriber = None
+        self.recorder = StreamingRecorder()
+        self.keyboard_devices = []
+        self.notification_id = None  # Track notification for in-place updates
+        self.platform = get_platform_info()  # Detect platform and available tools
+
+    def ensure_whisper_server(self):
+        """
+        Ensure whisper.cpp server is running.
+        If not, try to start it using local binary.
+        Returns True if server is available, False otherwise.
+        """
+        # Check if server is already running
+        try:
+            response = requests.get(WHISPER_URL.replace('/v1/audio/transcriptions', '/health'), timeout=2)
+            if response.status_code == 200:
+                return True
+        except (requests.ConnectionError, requests.Timeout):
+            pass
+
+        # Server not running, try to start it
+        print("⚠ whisper server not running. Attempting to start local server...")
+
+        # Try to use the start-server.sh script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        start_script = os.path.join(script_dir, '.whisper/scripts/start-server.sh')
+
+        if os.path.exists(start_script):
+            try:
+                # Run start script in background
+                subprocess.Popen(['bash', start_script],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+                # Wait for server to become available (up to 20 seconds)
+                print("⏳ Waiting for whisper server to start...")
+                for i in range(40):  # 40 attempts * 0.5s = 20 seconds max
+                    try:
+                        response = requests.get(WHISPER_URL.replace('/v1/audio/transcriptions', '/health'), timeout=1)
+                        if response.status_code == 200:
+                            print("✓ whisper server started successfully!")
+                            return True
+                    except (requests.ConnectionError, requests.Timeout):
+                        time.sleep(0.5)
+
+                print("✗ Server not responding after 20 seconds")
+                return False
+
+            except Exception as e:
+                print(f"✗ Failed to start server: {e}")
+                return False
+        else:
+            print(f"✗ Start script not found: {start_script}")
+            return False
+
+    def find_keyboard_devices(self):
+        """Find all keyboard input devices with F12 key"""
+        devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
+        keyboard_devices = []
+
+        # Look for keyboard devices
+        for device in devices:
+            capabilities = device.capabilities(verbose=False)
+            # Check if device has keyboard keys (EV_KEY events)
+            if ecodes.EV_KEY in capabilities:
+                keys = capabilities[ecodes.EV_KEY]
+                # Check if it has F12 key
+                if TRIGGER_KEY in keys:
+                    print(f"Found keyboard device: {device.name} ({device.path})")
+                    keyboard_devices.append(device)
+
+        return keyboard_devices
+
+    def play_beep(self, frequency=800, duration=0.1):
+        """Play a beep sound for feedback"""
+        if not BEEP_ENABLED:
+            return
+
+        try:
+            # Generate beep using paplay (PulseAudio)
+            # Use ffmpeg to generate tone
+            subprocess.run([
+                'paplay',
+                '--raw',
+                '--format=s16le',
+                '--rate=16000',
+                '--channels=1',
+                '/dev/stdin'
+            ], input=self._generate_tone(frequency, duration, SAMPLE_RATE),
+               timeout=1,
+               check=False,
+               stderr=subprocess.DEVNULL)
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            # Silently fail if paplay not available
+            pass
+
+    def _generate_tone(self, frequency, duration, sample_rate):
+        """Generate a simple sine wave tone"""
+        samples = int(sample_rate * duration)
+        t = np.linspace(0, duration, samples, False)
+        tone = np.sin(2 * np.pi * frequency * t)
+        # Convert to 16-bit PCM
+        tone = (tone * 32767).astype(np.int16)
+        return tone.tobytes()
+
+    def show_notification(self, title, message, icon='dialog-information', timeout=5000):
+        """Show or update desktop notification"""
+        try:
+            cmd = ['notify-send', '-i', icon, '-t', str(timeout), title, message]
+
+            if self.notification_id:
+                # Replace existing notification
+                cmd.insert(1, '--replace-id')
+                cmd.insert(2, self.notification_id)
+            else:
+                # Get notification ID for future updates
+                cmd.insert(1, '--print-id')
+
+            result = subprocess.run(cmd, capture_output=True, text=True,
+                                   timeout=2, check=False)
+
+            # Store notification ID if this is the first notification
+            if not self.notification_id and result.stdout:
+                self.notification_id = result.stdout.strip()
+
+        except Exception:
+            # Silently fail - notifications are nice-to-have
+            pass
+
+    def type_text_via_clipboard(self, text):
+        """Copy text to clipboard and automatically paste with keyboard shortcut"""
+        if not text:
+            return False
+
+        # Copy to clipboard using platform-appropriate tool
+        if not self.platform.copy_to_clipboard(text):
+            print("✗ Error: No clipboard tool available")
+            print("\nPlease install required tools:")
+            print(self.platform.get_install_instructions())
+            return False
+
+        # Increased delay to ensure clipboard is ready
+        time.sleep(0.15)
+
+        print(f"✓ Copied {len(text)} characters to clipboard")
+
+        # Automatically paste using keyboard shortcut (Shift+Ctrl+V for terminals)
+        if self.platform.simulate_paste_shortcut(use_shift=True):
+            print("✓ Auto-pasted into active window")
+            return True
+        else:
+            # Fallback: clipboard only (manual paste required)
+            print("⚠ Auto-paste not available")
+            print("📋 Text is in clipboard - paste manually with Shift+Ctrl+V (terminals) or Ctrl+V (GUI)")
+            return True  # Still successful - text is in clipboard
+
+    def handle_key_event(self, event):
+        """Handle keyboard events (press/release)"""
+        if event.code != TRIGGER_KEY:
+            return
+
+        if event.value == 1:  # Key pressed
+            print("\n🎤 Recording... (hold F12)")
+            self.play_beep(800, 0.1)  # High beep
+            self.recorder.start()
+            # Show notification with long timeout (will be replaced when done)
+            self.show_notification('Voice Input', 'Recording...',
+                                 icon='audio-input-microphone', timeout=60000)
+
+        elif event.value == 0:  # Key released
+            print("⏹️  Recording stopped")
+            self.play_beep(400, 0.1)  # Low beep
+
+            # Stop recording and get audio data
+            audio_data = self.recorder.stop()
+
+            if audio_data is not None:
+                # Update notification to show transcribing status
+                self.show_notification('Voice Input', 'Transcribing...',
+                                     icon='view-refresh', timeout=30000)
+                # Transcribe in background to avoid blocking key monitoring
+                threading.Thread(
+                    target=self._transcribe_and_type,
+                    args=(audio_data,),
+                    daemon=True
+                ).start()
+            else:
+                print("No audio data recorded")
+                self.show_notification('Voice Input', 'Recording too short',
+                                     icon='dialog-warning', timeout=3000)
+
+    def _transcribe_and_type(self, audio_data):
+        """Transcribe audio and type the result"""
+        try:
+            print("🔄 Transcribing...")
+            transcribed_text = self.transcriber.transcribe_audio(audio_data)
+
+            if transcribed_text:
+                print(f"📝 Transcription: {transcribed_text}")
+
+                # Show preview in notification (first 50 chars)
+                preview = transcribed_text[:50] + ('...' if len(transcribed_text) > 50 else '')
+                self.show_notification('Voice Input', f'Ready: {preview}',
+                                     icon='dialog-ok-apply', timeout=3000)
+
+                self.type_text_via_clipboard(transcribed_text)
+            else:
+                print("✗ No speech detected")
+                self.show_notification('Voice Input', 'No speech detected',
+                                     icon='dialog-warning', timeout=3000)
+
+        except Exception as e:
+            print(f"✗ Error during transcription: {e}")
+            self.show_notification('Voice Input', f'Error: {str(e)[:40]}',
+                                 icon='dialog-error', timeout=5000)
+
+    def run(self):
+        """Main daemon loop"""
+        print("="*60)
+        print("Hold-to-Speak Voice Input Daemon")
+        print("="*60)
+        print(f"Platform: {self.platform.display_server.upper()}/{self.platform.desktop_env}")
+        print(f"Clipboard: {self.platform.get_clipboard_tool() or 'None'}")
+        print(f"Keyboard: {self.platform.get_keyboard_tool() or 'None'}")
+        print(f"Trigger key: F12")
+        print(f"Whisper server: {WHISPER_URL}")
+        print(f"Minimum recording: {MIN_RECORDING_DURATION}s")
+        print("="*60)
+
+        # Ensure whisper server is running before starting daemon
+        print("\nChecking whisper.cpp server...")
+        if not self.ensure_whisper_server():
+            print("\n✗ Error: whisper.cpp server is not available")
+            print("\nPlease start the server manually:")
+            print("  systemctl --user start whisper-server")
+            print("  OR: bash .whisper/scripts/start-server.sh")
+            print("  OR: bash install-whisper.sh")
+            sys.exit(1)
+
+        # Initialize transcriber now that server is running
+        try:
+            self.transcriber = VoiceTranscriber()
+            print("✓ Connected to whisper.cpp server")
+        except Exception as e:
+            print(f"\n✗ Error connecting to whisper server: {e}")
+            sys.exit(1)
+
+        # Find keyboard devices
+        print("\nSearching for keyboard devices...")
+        self.keyboard_devices = self.find_keyboard_devices()
+
+        if not self.keyboard_devices:
+            print("✗ Error: Could not find any keyboard device with F12 key")
+            print("\nTroubleshooting:")
+            print("1. Make sure you're in the 'input' group:")
+            print("   sudo usermod -a -G input $USER")
+            print("2. Log out and log back in for group changes to take effect")
+            print("3. Check available devices:")
+            print("   python3 -c 'import evdev; print([d for d in evdev.list_devices()])'")
+            sys.exit(1)
+
+        print(f"✓ Monitoring {len(self.keyboard_devices)} keyboard(s)")
+        print("\n🎯 Ready! Hold F12 to record, release to transcribe and type.")
+        print("Press Ctrl+C to stop daemon.\n")
+
+        try:
+            # Create a device map for select
+            import select
+            devices_map = {dev.fd: dev for dev in self.keyboard_devices}
+
+            # Monitor keyboard events from all devices
+            while True:
+                r, w, x = select.select(devices_map, [], [])
+                for fd in r:
+                    device = devices_map[fd]
+                    for event in device.read():
+                        if event.type == ecodes.EV_KEY:
+                            self.handle_key_event(event)
+
+        except KeyboardInterrupt:
+            print("\n\n✓ Daemon stopped")
+            sys.exit(0)
+        except Exception as e:
+            print(f"\n✗ Error: {e}")
+            sys.exit(1)
+
+
+def main():
+    """Entry point"""
+    try:
+        daemon = HoldToSpeakDaemon()
+        daemon.run()
+    except Exception as e:
+        print(f"✗ Fatal error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
