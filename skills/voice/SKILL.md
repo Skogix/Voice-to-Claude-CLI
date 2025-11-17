@@ -2,6 +2,7 @@
 name: voice-transcription
 description: Record and transcribe voice input when user wants to speak instead of type, describe complex issues verbally, provide audio input, or dictate text. Use this when user says "record my voice", "let me speak", "voice input", "transcribe audio", or when verbal description would be clearer than typing.
 allowed-tools: [Bash, Read]
+version: 1.0.0
 ---
 
 # Voice Transcription Skill
@@ -49,7 +50,7 @@ You don't need to manually check the server - the script does it!
 
 1. **Run the transcription script:**
    ```bash
-   source venv/bin/activate && python .claude/skills/voice/scripts/transcribe.py --duration 5
+   source venv/bin/activate && python skills/voice/scripts/transcribe.py --duration 5
    ```
 
    The script automatically:
@@ -99,7 +100,7 @@ You don't need to manually check the server - the script does it!
 The transcription script accepts optional parameters:
 
 - `--duration N` - Record for N seconds (1-30, default 5)
-- Example: `python .claude/skills/voice/scripts/transcribe.py --duration 10`
+- Example: `python skills/voice/scripts/transcribe.py --duration 10`
 
 ## Troubleshooting
 
@@ -120,7 +121,7 @@ If transcription fails:
    ```bash
    cd /home/amdvall/projects/voice-to-claude-cli
    source venv/bin/activate
-   python .claude/skills/voice/scripts/transcribe.py
+   python skills/voice/scripts/transcribe.py
    ```
 
 ## Privacy Note

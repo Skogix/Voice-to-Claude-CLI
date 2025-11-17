@@ -13,7 +13,7 @@ You are helping the user install Voice-to-Claude-CLI, a local voice transcriptio
 
 2. **Run installer:**
    ```bash
-   bash install.sh
+   bash scripts/install.sh
    ```
    - Auto-detects distro (Arch/Ubuntu/Fedora/OpenSUSE)
    - Installs dependencies (ydotool, clipboard tools)

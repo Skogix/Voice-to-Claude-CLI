@@ -5,7 +5,8 @@ A **cross-platform** local voice transcription tool that converts speech to text
 ## Quick Install (Claude Code Plugin)
 
 ```bash
-/plugin add aldervall/Voice-to-Claude-CLI
+/plugin marketplace add aldervall/Voice-to-Claude-CLI
+/plugin install voice-transcription@voice-to-claude-marketplace
 ```
 
 Then run `/voice-install` and you're done! Say "record my voice" to Claude to start using it.
@@ -60,7 +61,8 @@ If you're using [Claude Code](https://claude.ai/code), you can install Voice-to-
 
 **Step 1: Add the plugin**
 ```bash
-/plugin add aldervall/Voice-to-Claude-CLI
+/plugin marketplace add aldervall/Voice-to-Claude-CLI
+/plugin install voice-transcription@voice-to-claude-marketplace
 ```
 
 **Step 2: Run the installer**
@@ -92,7 +94,7 @@ That's it! The voice transcription skill and commands are now available. Just sa
 **One-command install for all Linux distributions:**
 
 ```bash
-bash install.sh
+bash scripts/install.sh
 ```
 
 This will:
@@ -168,9 +170,9 @@ pip install -r requirements.txt
 
 ```bash
 # Automated installer
-bash install-whisper.sh
+bash scripts/install-whisper.sh
 
-# Or manual installation (see CLAUDE.md)
+# Or manual installation (see docs/CLAUDE.md)
 ```
 
 </details>
@@ -241,7 +243,7 @@ Terminal-based transcription for testing or standalone use.
 
 ```bash
 source venv/bin/activate
-python voice_to_claude.py
+python -m src.voice_to_claude
 ```
 
 **Commands:**
@@ -320,13 +322,14 @@ The easiest way to use voice transcription with Claude Code - **zero configurati
 
 **Option 1: Plugin (Easiest)**
 ```bash
-/plugin add aldervall/Voice-to-Claude-CLI
+/plugin marketplace add aldervall/Voice-to-Claude-CLI
+/plugin install voice-transcription@voice-to-claude-marketplace
 /voice-install
 ```
 The skill and commands are instantly available!
 
 **Option 2: Local Project**
-After running `bash scripts/install.sh`, the skill is auto-discovered from `.claude/skills/voice/`
+After running `bash scripts/install.sh`, the skill is auto-discovered from `skills/voice/`
 
 **How it works:**
 - Claude autonomously offers voice input when appropriate

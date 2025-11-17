@@ -101,7 +101,7 @@ python -m src.voice_to_claude
 
 ### Voice Transcription Skill (Recommended)
 
-The `.claude/skills/voice/` directory contains a Skill that enables Claude to autonomously offer voice transcription when appropriate.
+The `skills/voice/` directory contains a Skill that enables Claude to autonomously offer voice transcription when appropriate.
 
 **Setup:** The skill is automatically discovered - no configuration needed!
 
@@ -112,8 +112,8 @@ The `.claude/skills/voice/` directory contains a Skill that enables Claude to au
 - Returns transcribed text directly to the conversation
 
 **Files:**
-- `.claude/skills/voice/SKILL.md` - Skill definition and instructions
-- `.claude/skills/voice/scripts/transcribe.py` - Transcription script using VoiceTranscriber class
+- `skills/voice/SKILL.md` - Skill definition and instructions
+- `skills/voice/scripts/transcribe.py` - Transcription script using VoiceTranscriber class
 
 **Advantages:**
 - ✅ Zero configuration - works immediately
@@ -143,7 +143,7 @@ The `.claude/skills/voice/` directory contains a Skill that enables Claude to au
 - Cross-platform APIs: `copy_to_clipboard()`, `type_text()`, `simulate_paste_shortcut()`
 - Graceful degradation with helpful error messages
 
-**3. Claude Code Skill** (`.claude/skills/voice/`)
+**3. Claude Code Skill** (`skills/voice/`)
 - Autonomous voice transcription skill for Claude Code
 - `SKILL.md`: Skill definition with trigger descriptions and instructions
 - `scripts/transcribe.py`: Python script using VoiceTranscriber class
@@ -159,7 +159,7 @@ The `.claude/skills/voice/` directory contains a Skill that enables Claude to au
 | `src/voice_holdtospeak.py` | Daemon | Always-on F12 hotkey | evdev keyboard monitoring | ydotool paste |
 | `src/voice_to_text.py` | One-shot | Hotkey-bound script | Fixed 5s recording | platform_detect typing |
 | `src/voice_to_claude.py` | Interactive | Testing/manual | Terminal ENTER prompt | Terminal stdout |
-| `.claude/skills/voice/` | Claude Skill | Autonomous Claude-initiated | Skill script execution | JSON to Claude context |
+| `skills/voice/` | Claude Skill | Autonomous Claude-initiated | Skill script execution | JSON to Claude context |
 
 **5. Installation System**
 - `scripts/install.sh`: Master installer with distro auto-detection
@@ -259,8 +259,8 @@ systemctl --user status voiceclaudecli-daemon whisper-server ydotool
 | `src/platform_detect.py` | Daemon + One-shot | `systemctl --user restart voiceclaudecli-daemon` OR `python -m src.platform_detect` |
 | `src/voice_holdtospeak.py` | Daemon only | `systemctl --user restart voiceclaudecli-daemon` |
 | `src/voice_to_text.py` | None (one-shot) | `voiceclaudecli-input` or `python -m src.voice_to_text` |
-| `.claude/skills/voice/SKILL.md` | None (auto-reload) | Ask Claude to use voice in new conversation |
-| `.claude/skills/voice/scripts/transcribe.py` | None | Run script directly: `python .claude/skills/voice/scripts/transcribe.py` |
+| `skills/voice/SKILL.md` | None (auto-reload) | Ask Claude to use voice in new conversation |
+| `skills/voice/scripts/transcribe.py` | None | Run script directly: `python skills/voice/scripts/transcribe.py` |
 | `scripts/install.sh` | N/A | Run installer on test system |
 
 ### Cross-Platform Guidelines
@@ -276,9 +276,20 @@ When user says "handover", update `HANDOVER.md` with what was accomplished and d
 
 ## File Organization
 
-**Project Structure (Session 14 Restructure):**
+**Project Structure (Plugin Marketplace Edition):**
 ```
 voice-to-claude-cli/
+├── .claude-plugin/      # Plugin marketplace metadata
+│   ├── marketplace.json       (marketplace catalog)
+│   └── plugin.json            (plugin metadata)
+├── skills/              # Claude Code skills (root level)
+│   └── voice/
+│       ├── SKILL.md           (skill definition)
+│       └── scripts/
+│           └── transcribe.py  (transcription script)
+├── commands/            # Claude Code slash commands (root level)
+│   ├── voice.md               (quick voice input)
+│   └── voice-install.md       (installation wizard)
 ├── src/                 # Python source code
 │   ├── __init__.py
 │   ├── voice_to_claude.py     (VoiceTranscriber)
@@ -295,7 +306,6 @@ voice-to-claude-cli/
 │   ├── README.md              (user docs)
 │   ├── HANDOVER.md            (session history)
 │   └── archive/               (old sessions)
-├── .claude/             # Claude Code integration
 ├── .whisper/            # Self-contained whisper.cpp
 └── venv/                # Python environment
 ```
@@ -309,7 +319,9 @@ voice-to-claude-cli/
 - `.whisper/models/` - Whisper models (git-ignored, 142 MB)
 - `.whisper/scripts/` - Helper scripts (download, start, install)
 
-**Claude Integration:** `.claude/skills/voice/` (Skill with auto-start capability), `.claude/commands/` (slash commands)
+**Plugin Marketplace:** `.claude-plugin/marketplace.json` (marketplace catalog), `.claude-plugin/plugin.json` (plugin metadata)
+
+**Claude Integration:** `skills/voice/` (Skill with auto-start capability), `commands/` (slash commands)
 
 **Configuration:** `config/voice-holdtospeak.service` (systemd template), `requirements.txt`, `.gitignore`
 
