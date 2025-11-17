@@ -78,17 +78,36 @@ case "$ARCH" in
         ;;
 esac
 
-# Check for pre-built binary
+# Check for pre-built binary and test if it actually works
 WHISPER_BINARY=""
+USE_PREBUILT=false
+
 if [ -n "$BINARY_NAME" ] && [ -f "$WHISPER_BIN_DIR/$BINARY_NAME" ]; then
-    echo_success "Found pre-built binary: $BINARY_NAME"
-    WHISPER_BINARY="$WHISPER_BIN_DIR/$BINARY_NAME"
-    USE_PREBUILT=true
+    echo_info "Found pre-built binary: $BINARY_NAME"
+    echo_info "Testing if binary works (checking shared libraries)..."
+
+    # Test if the binary can actually run (check for missing shared libs)
+    if ldd "$WHISPER_BIN_DIR/$BINARY_NAME" 2>&1 | grep -q "not found"; then
+        echo_warning "Pre-built binary has missing shared library dependencies!"
+        echo_info "Missing libraries:"
+        ldd "$WHISPER_BIN_DIR/$BINARY_NAME" 2>&1 | grep "not found" | sed 's/^/  /'
+        echo_info "Will build from source instead (creates self-contained binary)..."
+        USE_PREBUILT=false
+    else
+        echo_success "Pre-built binary is functional!"
+        WHISPER_BINARY="$WHISPER_BIN_DIR/$BINARY_NAME"
+        USE_PREBUILT=true
+    fi
 else
     echo_info "No pre-built binary found for $ARCH"
     echo_info "Will build from source..."
     USE_PREBUILT=false
+fi
 
+echo
+
+# Build from source if not using pre-built binary
+if [ "$USE_PREBUILT" = false ]; then
     # Check for required build tools
     echo_info "Checking build dependencies..."
 
@@ -134,12 +153,7 @@ else
     fi
 
     echo_success "All build dependencies found"
-fi
 
-echo
-
-# Build from source if not using pre-built binary
-if [ "$USE_PREBUILT" = false ]; then
     WHISPER_DIR="/tmp/whisper.cpp"
 
     # Clone or update whisper.cpp
