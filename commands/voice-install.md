@@ -8,7 +8,7 @@ You are helping the user install Voice-to-Claude-CLI, a local voice transcriptio
 
 **1. Run the automated installer:**
 ```bash
-bash scripts/install.sh
+cd "$CLAUDE_PLUGIN_ROOT" && INTERACTIVE=false bash scripts/install.sh
 ```
 
 This script will automatically:

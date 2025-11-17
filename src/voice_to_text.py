@@ -54,7 +54,7 @@ def main():
     print(f"Using: {platform.get_keyboard_tool() or 'clipboard'} for text input")
     print("="*60)
     print("\nThis will:")
-    print("  1. Record audio for {} seconds".format(DURATION))
+    print(f"  1. Record audio for {DURATION} seconds")
     print("  2. Transcribe using whisper.cpp")
     print("  3. Type the text into the active window")
     print("\nMake sure Claude Code terminal is focused!")

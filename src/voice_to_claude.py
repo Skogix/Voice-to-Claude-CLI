@@ -2,8 +2,12 @@
 """
 Voice-to-Claude-CLI: Local voice transcription using whisper.cpp
 """
+import os
 import sys
 import tempfile
+from typing import Optional
+import numpy as np
+import numpy.typing as npt
 import requests
 import sounddevice as sd
 import scipy.io.wavfile as wav
@@ -15,7 +19,8 @@ WHISPER_URL = "http://127.0.0.1:2022/v1/audio/transcriptions"
 
 
 class VoiceTranscriber:
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize VoiceTranscriber and verify whisper.cpp server connection."""
         # Check if whisper.cpp server is running
         try:
             response = requests.get("http://127.0.0.1:2022/health", timeout=2)
@@ -33,8 +38,15 @@ class VoiceTranscriber:
             print("  --threads 4 --processors 1 --convert --print-progress")
             sys.exit(1)
 
-    def record_audio(self, duration=DURATION):
-        """Record audio from microphone"""
+    def record_audio(self, duration: int = DURATION) -> npt.NDArray[np.int16]:
+        """Record audio from microphone.
+
+        Args:
+            duration: Recording duration in seconds
+
+        Returns:
+            Audio data as 16kHz mono int16 numpy array
+        """
         print(f"\nRecording for {duration} seconds... Speak now!")
         audio_data = sd.rec(int(duration * SAMPLE_RATE),
                            samplerate=SAMPLE_RATE,
@@ -44,8 +56,15 @@ class VoiceTranscriber:
         print("Recording finished!")
         return audio_data
 
-    def transcribe_audio(self, audio_data):
-        """Convert audio to text using whisper.cpp HTTP API"""
+    def transcribe_audio(self, audio_data: npt.NDArray[np.int16]) -> str:
+        """Convert audio to text using whisper.cpp HTTP API.
+
+        Args:
+            audio_data: 16kHz mono int16 audio data
+
+        Returns:
+            Transcribed text, or empty string on failure
+        """
         # Save audio to temporary WAV file
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
             wav.write(tmp_file.name, SAMPLE_RATE, audio_data)
@@ -69,11 +88,10 @@ class VoiceTranscriber:
             return ""
         finally:
             # Clean up temporary file
-            import os
             os.unlink(tmp_filename)
 
-    def run_interactive(self):
-        """Run interactive voice transcription session"""
+    def run_interactive(self) -> None:
+        """Run interactive voice transcription session in terminal."""
         print("\n" + "="*60)
         print("Voice Transcription (whisper.cpp)")
         print("="*60)
@@ -117,7 +135,8 @@ class VoiceTranscriber:
                 print("Please try again.")
 
 
-def main():
+def main() -> None:
+    """Main entry point for interactive voice transcription."""
     try:
         transcriber = VoiceTranscriber()
         transcriber.run_interactive()

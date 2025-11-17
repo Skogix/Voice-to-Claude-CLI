@@ -35,6 +35,15 @@ echo_success() { echo -e "${GREEN}✓${NC} $1"; }
 echo_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
 echo_error() { echo -e "${RED}✗${NC} $1"; }
 
+# Detect if running non-interactively (from Claude Code or CI)
+if [ -t 0 ]; then
+    INTERACTIVE="${INTERACTIVE:-true}"
+else
+    INTERACTIVE="${INTERACTIVE:-false}"
+fi
+# Allow explicit override via environment variable
+INTERACTIVE="${INTERACTIVE:-true}"
+
 echo "========================================"
 echo "whisper.cpp Auto-Installer"
 echo "========================================"
@@ -175,7 +184,7 @@ if [ -f "$MODEL_PATH" ]; then
     echo_success "Model already exists: $MODEL_PATH"
 else
     echo_info "Downloading $MODEL_NAME model (~142MB)..."
-    bash "$SCRIPT_DIR/.whisper/scripts/download-model.sh" "$MODEL_NAME"
+    bash "$PROJECT_ROOT/.whisper/scripts/download-model.sh" "$MODEL_NAME"
     echo_success "Model downloaded"
 fi
 
@@ -266,8 +275,14 @@ echo_success "Systemd daemon reloaded"
 echo
 
 # Ask to start service
-read -p "Start whisper server now? [Y/n]: " START_NOW
-START_NOW=${START_NOW:-y}
+if [ "$INTERACTIVE" = "true" ]; then
+    read -p "Start whisper server now? [Y/n]: " START_NOW
+    START_NOW=${START_NOW:-y}
+else
+    # Non-interactive mode: default to yes
+    START_NOW="${AUTO_START_SERVER:-y}"
+    echo_info "Non-interactive mode: Starting whisper server (override with AUTO_START_SERVER=n)"
+fi
 
 if [[ "$START_NOW" =~ ^[Yy] ]]; then
     echo_info "Starting whisper-server..."
@@ -296,8 +311,14 @@ fi
 echo
 
 # Ask to enable auto-start
-read -p "Enable auto-start on login? [Y/n]: " ENABLE_AUTO
-ENABLE_AUTO=${ENABLE_AUTO:-y}
+if [ "$INTERACTIVE" = "true" ]; then
+    read -p "Enable auto-start on login? [Y/n]: " ENABLE_AUTO
+    ENABLE_AUTO=${ENABLE_AUTO:-y}
+else
+    # Non-interactive mode: default to yes
+    ENABLE_AUTO="${AUTO_ENABLE_SERVICE:-y}"
+    echo_info "Non-interactive mode: Enabling auto-start (override with AUTO_ENABLE_SERVICE=n)"
+fi
 
 if [[ "$ENABLE_AUTO" =~ ^[Yy] ]]; then
     systemctl --user enable whisper-server
@@ -338,7 +359,7 @@ echo "  curl http://127.0.0.1:$PORT/health"
 echo
 
 echo "Manual start (if needed):"
-echo "  bash $SCRIPT_DIR/.whisper/scripts/start-server.sh"
+echo "  bash $PROJECT_ROOT/.whisper/scripts/start-server.sh"
 echo
 
 echo "To test transcription, use voiceclaudecli-daemon or voiceclaudecli-input!"

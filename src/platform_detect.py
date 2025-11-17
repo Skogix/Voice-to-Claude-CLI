@@ -9,6 +9,11 @@ import subprocess
 import shutil
 from typing import Dict, Optional, List
 
+# ydotool key codes for keyboard simulation
+YDOTOOL_KEY_LEFT_SHIFT = 42
+YDOTOOL_KEY_LEFT_CTRL = 29
+YDOTOOL_KEY_V = 47
+
 
 class PlatformInfo:
     """Container for platform detection results"""
@@ -243,17 +248,19 @@ class PlatformInfo:
         try:
             if use_shift:
                 # Shift+Ctrl+V for terminals
-                # Key codes: 42=LeftShift, 29=LeftCtrl, 47=V
                 subprocess.run(
-                    ['ydotool', 'key', '42:1', '29:1', '47:1', '47:0', '29:0', '42:0'],
+                    ['ydotool', 'key',
+                     f'{YDOTOOL_KEY_LEFT_SHIFT}:1', f'{YDOTOOL_KEY_LEFT_CTRL}:1', f'{YDOTOOL_KEY_V}:1',
+                     f'{YDOTOOL_KEY_V}:0', f'{YDOTOOL_KEY_LEFT_CTRL}:0', f'{YDOTOOL_KEY_LEFT_SHIFT}:0'],
                     check=True,
                     timeout=2
                 )
             else:
                 # Ctrl+V for GUI apps
-                # Key codes: 29=LeftCtrl, 47=V
                 subprocess.run(
-                    ['ydotool', 'key', '29:1', '47:1', '47:0', '29:0'],
+                    ['ydotool', 'key',
+                     f'{YDOTOOL_KEY_LEFT_CTRL}:1', f'{YDOTOOL_KEY_V}:1',
+                     f'{YDOTOOL_KEY_V}:0', f'{YDOTOOL_KEY_LEFT_CTRL}:0'],
                     check=True,
                     timeout=2
                 )

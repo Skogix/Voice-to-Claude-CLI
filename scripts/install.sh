@@ -34,6 +34,15 @@ echo_success() { echo -e "${GREEN}✓${NC} $1"; }
 echo_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
 echo_error() { echo -e "${RED}✗${NC} $1"; }
 
+# Detect if running non-interactively (from Claude Code or CI)
+if [ -t 0 ]; then
+    INTERACTIVE="${INTERACTIVE:-true}"
+else
+    INTERACTIVE="${INTERACTIVE:-false}"
+fi
+# Allow explicit override via environment variable
+INTERACTIVE="${INTERACTIVE:-true}"
+
 # Detect Linux distribution
 detect_distro() {
     if [ -f /etc/os-release ]; then
@@ -306,8 +315,14 @@ if command -v whisper-server &>/dev/null || [ -f "/tmp/whisper.cpp/build/bin/whi
     echo_success "whisper.cpp appears to be already installed"
     INSTALL_WHISPER="n"
 else
-    read -p "Install whisper.cpp server? (recommended) [Y/n]: " INSTALL_WHISPER
-    INSTALL_WHISPER=${INSTALL_WHISPER:-y}
+    if [ "$INTERACTIVE" = "true" ]; then
+        read -p "Install whisper.cpp server? (recommended) [Y/n]: " INSTALL_WHISPER
+        INSTALL_WHISPER=${INSTALL_WHISPER:-y}
+    else
+        # Non-interactive mode: default to yes
+        INSTALL_WHISPER="${AUTO_INSTALL_WHISPER:-y}"
+        echo_info "Non-interactive mode: Installing whisper.cpp server (override with AUTO_INSTALL_WHISPER=n)"
+    fi
 fi
 
 if [[ "$INSTALL_WHISPER" =~ ^[Yy] ]]; then
