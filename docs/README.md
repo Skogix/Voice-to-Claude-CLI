@@ -59,11 +59,12 @@ That's it! The installer shows beautiful progress indicators and progress bars f
 - **📦 Self-Contained** - Everything bundled, works offline
 - **🔑 No API Keys** - No cloud services required
 
-## Support
+## Documentation
 
-- **Documentation:** [CLAUDE.md](docs/CLAUDE.md) - Developer guide & troubleshooting
-- **Advanced Usage:** [ADVANCED.md](docs/ADVANCED.md) - Command-line tools & customization
-- **Issues:** [GitHub Issues](https://github.com/aldervall/Voice-to-Claude-CLI/issues)
+- **📚 [Complete Documentation Index](INDEX.md)** - Find everything you need
+- **🔧 [Advanced Usage](ADVANCED.md)** - Customization, hotkeys, scripting
+- **💻 [Developer Guide](CLAUDE.md)** - Architecture, troubleshooting, contributing
+- **🐛 [GitHub Issues](https://github.com/aldervall/Voice-to-Claude-CLI/issues)** - Report bugs or request features
 
 ## License
 

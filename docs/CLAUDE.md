@@ -11,6 +11,12 @@ Voice-to-Claude-CLI is a **cross-platform** Python application that provides loc
 - Display servers: Wayland and X11
 - Desktop environments: KDE, GNOME, XFCE, i3, Sway, and others
 
+**Documentation Guide:**
+- **CLAUDE.md** (this file) - Developer guide for Claude Code: architecture, troubleshooting, development workflow
+- **README.md** - User installation guide and quick start
+- **docs/ADVANCED.md** - User customization options (hotkeys, duration, beeps, notifications, scripting)
+- **docs/HANDOVER.md** - Development session history and architectural decisions
+
 ## Critical Prerequisites
 
 **The whisper.cpp server MUST be running before any voice transcription will work.**
@@ -282,7 +288,7 @@ systemctl --user status voiceclaudecli-daemon whisper-server ydotool
 - Added ldd test for pre-built whisper binary (commit e315fcb)
 - Automatic fallback to source build if shared libraries missing
 
-**Known Issue:** Plugin installations before 2025-11-17 have old scripts without ldd test. See `docs/INSTALLATION_STATUS.md` for refresh options.
+**Note:** `docs/PLUGIN_ARCHITECTURE.md` documents the historical plugin discovery issues - these are now RESOLVED. The file remains as a reference for the architectural decisions made.
 
 ### Handover
 
