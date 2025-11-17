@@ -4,7 +4,7 @@
 # Supports: Arch, Ubuntu/Debian, Fedora, OpenSUSE
 # Works standalone or as Claude Code plugin
 #
-set -e  # Exit on error
+# NOTE: We DO NOT use 'set -e' to allow graceful error handling
 
 # Detect if running from Claude Code plugin or standalone
 if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
@@ -152,9 +152,40 @@ echo
 echo_info "Installing: $PACKAGES"
 echo
 
-$INSTALL_CMD $PACKAGES
-
-echo_success "System dependencies installed!"
+# Try to install packages with error handling
+if ! $INSTALL_CMD $PACKAGES; then
+    echo_error "Failed to install system packages!"
+    echo
+    echo_info "Troubleshooting steps:"
+    case "$DISTRO" in
+        arch|manjaro|cachyos|endeavouros)
+            echo "  1. Update package database: sudo pacman -Sy"
+            echo "  2. Check package availability: pacman -Ss ydotool python-pip"
+            echo "  3. Try manually: $INSTALL_CMD $PACKAGES"
+            ;;
+        ubuntu|debian|pop|mint|elementary)
+            echo "  1. Update package list: sudo apt-get update"
+            echo "  2. Check package availability: apt-cache search ydotool python3-pip"
+            echo "  3. Try manually: $INSTALL_CMD $PACKAGES"
+            ;;
+        fedora|rhel|centos|rocky|almalinux)
+            echo "  1. Check package availability: dnf search ydotool python3-pip"
+            echo "  2. Try manually: $INSTALL_CMD $PACKAGES"
+            ;;
+        opensuse*|sles)
+            echo "  1. Check package availability: zypper search ydotool python3-pip"
+            echo "  2. Try manually: $INSTALL_CMD $PACKAGES"
+            ;;
+    esac
+    echo
+    echo_warning "Installation will continue, but some features may not work"
+    echo_warning "Press Ctrl+C to abort, or Enter to continue anyway..."
+    if [ "$INTERACTIVE" = "true" ]; then
+        read -r
+    fi
+else
+    echo_success "System dependencies installed!"
+fi
 echo
 
 # Enable ydotool daemon (required for keyboard automation)

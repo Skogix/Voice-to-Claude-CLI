@@ -43,6 +43,9 @@ wheels/
 .claude/settings.local.json
 .claude/*.local.*
 
+# Old marketplace structure (backup only)
+.claude-plugin.backup/
+
 # OS
 .DS_Store
 Thumbs.db

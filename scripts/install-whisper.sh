@@ -4,7 +4,7 @@
 # Uses pre-built binary or compiles from source if needed
 # Works standalone or as Claude Code plugin
 #
-set -e  # Exit on error
+# NOTE: We DO NOT use 'set -e' to allow graceful error handling
 
 # Detect if running from Claude Code plugin or standalone
 if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
@@ -137,7 +137,17 @@ if [ "$USE_PREBUILT" = false ]; then
         git pull || true  # Don't fail if no internet
     else
         echo_info "Cloning whisper.cpp..."
-        git clone https://github.com/ggerganov/whisper.cpp "$WHISPER_DIR"
+        if ! git clone https://github.com/ggerganov/whisper.cpp "$WHISPER_DIR"; then
+            echo_error "Failed to clone whisper.cpp repository!"
+            echo
+            echo_info "Troubleshooting steps:"
+            echo "  1. Check internet connection: ping -c 3 github.com"
+            echo "  2. Check git is installed: git --version"
+            echo "  3. Try manually: git clone https://github.com/ggerganov/whisper.cpp $WHISPER_DIR"
+            echo
+            echo_error "Cannot continue without whisper.cpp source code"
+            exit 1
+        fi
         cd "$WHISPER_DIR"
         echo_success "Cloned whisper.cpp"
     fi
@@ -159,12 +169,29 @@ if [ "$USE_PREBUILT" = false ]; then
 
         # Copy binary to .whisper/bin/
         mkdir -p "$WHISPER_BIN_DIR"
-        cp "$WHISPER_DIR/build/bin/whisper-server" "$WHISPER_BIN_DIR/$BINARY_NAME"
+
+        if ! cp "$WHISPER_DIR/build/bin/whisper-server" "$WHISPER_BIN_DIR/$BINARY_NAME"; then
+            echo_error "Failed to copy binary (build may have failed silently)"
+            echo_info "Check build output above and /tmp/whisper-build.log"
+            exit 1
+        fi
+
         chmod +x "$WHISPER_BIN_DIR/$BINARY_NAME"
         WHISPER_BINARY="$WHISPER_BIN_DIR/$BINARY_NAME"
         echo_success "Binary copied to: $WHISPER_BINARY"
     else
-        echo_error "Build failed. Check /tmp/whisper-build.log for details"
+        echo_error "Build failed!"
+        echo
+        echo_info "Troubleshooting steps:"
+        echo "  1. Check build log: cat /tmp/whisper-build.log"
+        echo "  2. Verify build tools: make --version && g++ --version"
+        echo "  3. Check disk space: df -h"
+        echo "  4. Try manually:"
+        echo "     cd $WHISPER_DIR"
+        echo "     make clean"
+        echo "     make server"
+        echo
+        echo_error "Cannot continue without whisper-server binary"
         exit 1
     fi
 
