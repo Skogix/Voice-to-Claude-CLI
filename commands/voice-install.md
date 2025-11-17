@@ -4,48 +4,38 @@ description: Install Voice-to-Claude-CLI with automated setup for your system
 
 You are helping the user install Voice-to-Claude-CLI, a local voice transcription tool.
 
-## Steps
+## Installation Steps
 
-1. **Verify we're in the project directory:**
-   ```bash
-   pwd  # Should be voiceclaudecli project
-   ```
+**1. Run the automated installer:**
+```bash
+bash scripts/install.sh
+```
 
-2. **Run installer:**
-   ```bash
-   bash scripts/install.sh
-   ```
-   - Auto-detects distro (Arch/Ubuntu/Fedora/OpenSUSE)
-   - Installs dependencies (ydotool, clipboard tools)
-   - Sets up Python venv
-   - Creates launchers in ~/.local/bin
-   - Installs systemd service
-   - If prompted about whisper.cpp: Recommend **Yes**
-   - If prompted about auto-start: Recommend **Yes**
+This script will automatically:
+- Detect your Linux distribution (Arch, Ubuntu, Fedora, OpenSUSE)
+- Install system dependencies (ydotool, clipboard tools, etc.)
+- Set up Python virtual environment
+- Install whisper.cpp server (pre-built binary)
+- Create launcher scripts in ~/.local/bin
+- Configure systemd services
 
-3. **Important: If user added to 'input' group:**
-   - User MUST log out and log back in for group changes to take effect
+**2. Important: User group changes**
+If the installer adds the user to the `input` group, they MUST log out and log back in for changes to take effect.
 
-4. **Verify installation:**
-   ```bash
-   command -v voiceclaudecli-daemon
-   curl http://127.0.0.1:2022/health
-   ```
+**3. Verify installation:**
+```bash
+curl http://127.0.0.1:2022/health
+systemctl --user status voiceclaudecli-daemon
+```
 
-5. **Test daemon:**
-   ```bash
-   systemctl --user start voiceclaudecli-daemon
-   systemctl --user status voiceclaudecli-daemon
-   ```
+## Usage After Installation
 
-## Usage Modes
-
-- **Daemon (recommended):** Hold F12 to record, release to transcribe
-- **One-shot:** Run `voiceclaudecli-input`
-- **Interactive:** Run `voiceclaudecli-interactive`
+- **Hold-to-speak:** Press and hold F12, speak, then release
+- **Quick voice input:** Use `/voice` command in Claude
+- **Interactive mode:** Run `voiceclaudecli-interactive`
 
 ## Notes
 
-- Requires sudo for system packages
-- All processing is local - no cloud services
-- If installation fails, check error messages and see CLAUDE.md for manual steps
+- All processing is 100% local - no cloud services
+- Requires sudo for installing system packages
+- See CLAUDE.md for troubleshooting and advanced usage
