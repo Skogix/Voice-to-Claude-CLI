@@ -16,7 +16,7 @@
 # Usage:
 #   bash scripts/uninstall.sh              # Interactive (default)
 #   bash scripts/uninstall.sh --all        # Remove everything
-#   bash scripts/uninstall.sh --keep-data  # Keep models & project
+#   bash scripts/uninstall.sh --keep-data  # Keep models & installation
 #   bash scripts/uninstall.sh --help       # Show help
 #===============================================================================
 
@@ -46,8 +46,8 @@ Usage: bash scripts/uninstall.sh [OPTIONS]
 
 Options:
   (none)          Interactive mode - prompts for each optional removal
-  --all           Remove everything including models, project, and Claude plugin
-  --keep-data     Remove only system integration (keep models and project)
+  --all           Remove everything including models, installation files, and Claude plugin
+  --keep-data     Remove only system integration (keep models and installation files)
   --help, -h      Show this help message
 
 What Gets Removed:
@@ -290,18 +290,18 @@ echo " Step 8/9: Optional - Project Directory"
 echo "========================================="
 echo ""
 
-# Handle project directory based on mode
+# Handle installation directory based on mode
 REMOVE_PROJECT=false
 if [ "$UNINSTALL_MODE" = "all" ]; then
     REMOVE_PROJECT=true
 elif [ "$UNINSTALL_MODE" = "keep-data" ]; then
     REMOVE_PROJECT=false
 elif [ "$UNINSTALL_MODE" = "interactive" ]; then
-    PROJECT_SIZE=$(du -sh "$PROJECT_ROOT" 2>/dev/null | cut -f1)
-    echo_info "Project directory: $PROJECT_ROOT ($PROJECT_SIZE)"
-    echo_warning "Removing project directory means re-cloning from GitHub"
+    INSTALL_SIZE=$(du -sh "$PROJECT_ROOT" 2>/dev/null | cut -f1)
+    echo_info "Installation directory: $PROJECT_ROOT ($INSTALL_SIZE)"
+    echo_warning "Removing installation directory means re-cloning from GitHub"
     echo_info "Keep it if you want to reinstall easily later"
-    read -p "Remove project directory? [y/N]: " -n 1 -r
+    read -p "Remove installation directory? [y/N]: " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         REMOVE_PROJECT=true
@@ -309,8 +309,8 @@ elif [ "$UNINSTALL_MODE" = "interactive" ]; then
 fi
 
 if [ "$REMOVE_PROJECT" = true ]; then
-    echo_info "Removing project directory..."
-    PROJECT_SIZE=$(du -sh "$PROJECT_ROOT" 2>/dev/null | cut -f1)
+    echo_info "Removing installation directory..."
+    INSTALL_SIZE=$(du -sh "$PROJECT_ROOT" 2>/dev/null | cut -f1)
     # Safety check - don't remove if we're in /home directly or system dirs
     case "$PROJECT_ROOT" in
         /|/home|/usr|/bin|/sbin|/etc|/var|/tmp)
@@ -318,13 +318,13 @@ if [ "$REMOVE_PROJECT" = true ]; then
             echo_info "Please remove manually if needed: rm -rf $PROJECT_ROOT"
             ;;
         *)
-            cd /tmp  # Move out of project dir before removing it
+            cd /tmp  # Move out of installation dir before removing it
             rm -rf "$PROJECT_ROOT"
-            echo_success "Removed project directory ($PROJECT_SIZE)"
+            echo_success "Removed installation directory ($INSTALL_SIZE)"
             ;;
     esac
 else
-    echo_info "Keeping project directory: $PROJECT_ROOT"
+    echo_info "Keeping installation directory: $PROJECT_ROOT"
 fi
 
 echo ""

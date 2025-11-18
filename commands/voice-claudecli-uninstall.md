@@ -35,7 +35,7 @@ bash scripts/uninstall.sh --interactive
 # Remove everything without prompts
 bash scripts/uninstall.sh --all
 
-# Keep models and project (remove only system integration)
+# Keep models and installation files (remove only system integration)
 bash scripts/uninstall.sh --keep-data
 ```
 
@@ -46,20 +46,20 @@ bash scripts/uninstall.sh --keep-data
 3. **Removes service files** from ~/.config/systemd/user/
 4. **Removes launcher scripts** from ~/.local/bin/
 5. **Removes installation directories** (with size reporting)
-6. **Prompts for optional cleanup** (models, project dir, Claude plugin)
+6. **Prompts for optional cleanup** (models, installation dir, Claude plugin)
 
 ## Safety Features
 
 - ✅ **Interactive confirmation** before removing anything
 - ✅ **Shows disk space** that will be recovered
-- ✅ **Keeps local project** by default (you can re-install easily)
+- ✅ **Keeps local installation** by default (you can re-install easily)
 - ✅ **Non-destructive** - only removes what it installed
 
 ## After Uninstall
 
 **To reinstall later:**
 ```bash
-# If you kept the project directory
+# If you kept the installation directory
 cd voice-to-claude-cli
 bash scripts/install.sh
 
@@ -89,7 +89,7 @@ sudo deluser $USER input
 
 **Want to keep whisper.cpp for other projects?**
 - Use `--keep-data` flag to only remove voice-to-claude-cli integration
-- whisper.cpp and models stay in project directory
+- whisper.cpp and models stay in installation directory
 
 ## Privacy Note
 

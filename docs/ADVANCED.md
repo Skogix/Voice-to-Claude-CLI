@@ -366,7 +366,7 @@ bash scripts/uninstall.sh
 # Remove everything (nuclear option)
 bash scripts/uninstall.sh --all
 
-# Keep models and project (remove only system integration)
+# Keep models and installation files (remove only system integration)
 bash scripts/uninstall.sh --keep-data
 ```
 
@@ -473,7 +473,7 @@ sudo deluser $USER input
 
 ### Reinstalling After Uninstall
 
-**If you kept the project directory:**
+**If you kept the installation directory:**
 ```bash
 cd ~/voice-to-claude-cli
 bash scripts/install.sh

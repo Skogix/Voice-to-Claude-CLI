@@ -86,7 +86,7 @@ bash scripts/uninstall.sh
 # Remove everything (nuclear option)
 bash scripts/uninstall.sh --all
 
-# Keep models and project (remove only system integration)
+# Keep models and installation files (remove only system integration)
 bash scripts/uninstall.sh --keep-data
 ```
 
