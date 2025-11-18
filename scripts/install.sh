@@ -22,6 +22,18 @@ fi
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/voiceclaudecli}"
 BIN_DIR="$HOME/.local/bin"
 
+# Track installation start time for error reporting
+INSTALL_START_TIME=$(date +%s)
+CURRENT_PHASE="Initialization"
+
+# Load error reporting module
+if [ -f "$SCRIPT_DIR/error-reporting.sh" ]; then
+    source "$SCRIPT_DIR/error-reporting.sh"
+    echo "Error reporting module loaded (opt-in)"
+else
+    echo_warning "Error reporting module not found - skipping"
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -109,6 +121,28 @@ EOF
 echo -e "${NC}"
 echo
 
+# Privacy notice
+echo_header "╭───────────────────────────────────────────────────────╮"
+echo_header "│  📋 Privacy & Error Reporting                        │"
+echo_header "╰───────────────────────────────────────────────────────╯"
+echo
+echo_info "Privacy First:"
+echo "  • 100% local processing - your voice never leaves your computer"
+echo "  • No telemetry, no tracking, no cloud services"
+echo "  • Open source - audit the code yourself"
+echo
+echo_info "Optional Installation Error Reporting (This Installer Only):"
+echo "  • If installation fails, you'll be asked to share a diagnostic report"
+echo "  • This ONLY applies to installation errors, not voice transcription"
+echo "  • We sanitize all personal info (usernames, paths)"
+echo "  • You can preview the full report before sending"
+echo "  • Helps us fix issues faster for everyone"
+echo
+echo "  We're not snooping - just grateful for your help! 🙏"
+echo
+echo_info "Control: Set ENABLE_ERROR_REPORTING=never to disable prompts"
+echo
+
 # Detect environment
 DISTRO=$(detect_distro)
 DISPLAY_SERVER=$(detect_display_server)
@@ -186,6 +220,8 @@ echo_header "║  📦 STEP 1/7: Install System Dependencies            ║"
 echo_header "╚═══════════════════════════════════════════════════════╝"
 echo
 
+CURRENT_PHASE="STEP 1/7: Install System Dependencies"
+
 # Check which packages are already installed (unless --force)
 if [ "$FORCE_INSTALL" = true ]; then
     MISSING_PACKAGES="$PACKAGES"
@@ -226,36 +262,45 @@ else
     echo
 
     # Try to install packages with error handling
-    if ! $INSTALL_CMD $MISSING_PACKAGES; then
-    echo_error "Failed to install system packages!"
-    echo
-    echo_info "Troubleshooting steps:"
-    case "$DISTRO" in
-        arch|manjaro|cachyos|endeavouros)
-            echo "  1. Update package database: sudo pacman -Sy"
-            echo "  2. Check package availability: pacman -Ss ydotool python-pip"
-            echo "  3. Try manually: $INSTALL_CMD $PACKAGES"
-            ;;
-        ubuntu|debian|pop|mint|elementary)
-            echo "  1. Update package list: sudo apt-get update"
-            echo "  2. Check package availability: apt-cache search ydotool python3-pip"
-            echo "  3. Try manually: $INSTALL_CMD $PACKAGES"
-            ;;
-        fedora|rhel|centos|rocky|almalinux)
-            echo "  1. Check package availability: dnf search ydotool python3-pip"
-            echo "  2. Try manually: $INSTALL_CMD $PACKAGES"
-            ;;
-        opensuse*|sles)
-            echo "  1. Check package availability: zypper search ydotool python3-pip"
-            echo "  2. Try manually: $INSTALL_CMD $PACKAGES"
-            ;;
-    esac
-    echo
-    echo_warning "Installation will continue, but some features may not work"
-    echo_warning "Press Ctrl+C to abort, or Enter to continue anyway..."
-    if [ "$INTERACTIVE" = "true" ]; then
-        read -r
-    fi
+    error_output=$($INSTALL_CMD $MISSING_PACKAGES 2>&1)
+    exit_code=$?
+
+    if [ $exit_code -ne 0 ]; then
+        echo_error "Failed to install system packages!"
+        echo
+        echo_info "Troubleshooting steps:"
+        case "$DISTRO" in
+            arch|manjaro|cachyos|endeavouros)
+                echo "  1. Update package database: sudo pacman -Sy"
+                echo "  2. Check package availability: pacman -Ss ydotool python-pip"
+                echo "  3. Try manually: $INSTALL_CMD $PACKAGES"
+                ;;
+            ubuntu|debian|pop|mint|elementary)
+                echo "  1. Update package list: sudo apt-get update"
+                echo "  2. Check package availability: apt-cache search ydotool python3-pip"
+                echo "  3. Try manually: $INSTALL_CMD $PACKAGES"
+                ;;
+            fedora|rhel|centos|rocky|almalinux)
+                echo "  1. Check package availability: dnf search ydotool python3-pip"
+                echo "  2. Try manually: $INSTALL_CMD $PACKAGES"
+                ;;
+            opensuse*|sles)
+                echo "  1. Check package availability: zypper search ydotool python3-pip"
+                echo "  2. Try manually: $INSTALL_CMD $PACKAGES"
+                ;;
+        esac
+        echo
+
+        # Offer error reporting if function is available
+        if type handle_installation_error &>/dev/null; then
+            handle_installation_error $exit_code "$CURRENT_PHASE" "$error_output"
+        else
+            echo_warning "Installation will continue, but some features may not work"
+            echo_warning "Press Ctrl+C to abort, or Enter to continue anyway..."
+            if [ "$INTERACTIVE" = "true" ]; then
+                read -r
+            fi
+        fi
     else
         echo_success "System dependencies installed!"
     fi
@@ -325,6 +370,8 @@ echo_header "╔═════════════════════�
 echo_header "║  🐍 STEP 4/7: Install Python Dependencies            ║"
 echo_header "╚═══════════════════════════════════════════════════════╝"
 echo
+
+CURRENT_PHASE="STEP 4/7: Install Python Dependencies"
 
 # Determine install location
 # Check if PROJECT_ROOT is inside HOME directory
@@ -497,6 +544,8 @@ echo_header "╔═════════════════════�
 echo_header "║  🎙️  STEP 7/7: whisper.cpp Server                    ║"
 echo_header "╚═══════════════════════════════════════════════════════╝"
 echo
+
+CURRENT_PHASE="STEP 7/7: whisper.cpp Server"
 
 echo_step "Voice transcription engine setup"
 echo_info "Model download: ~142 MB (one-time, with progress bar)"

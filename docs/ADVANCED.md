@@ -373,6 +373,130 @@ source venv/bin/activate
 python -c "from src.voice_to_claude import VoiceTranscriber; vt = VoiceTranscriber(); audio = vt.record_audio(3); print(vt.transcribe_audio(audio))"
 ```
 
+## Privacy & Error Reporting
+
+### Privacy-First Design
+
+Voice-to-Claude-CLI is designed with **privacy as the foundation**:
+
+- ✅ **100% Local Processing** - All voice transcription happens on your computer
+- ✅ **No Cloud Services** - Zero API calls to external servers
+- ✅ **No Telemetry** - We don't track usage, analytics, or collect any data
+- ✅ **Open Source** - Full transparency - audit the code yourself
+
+### Optional Error Reporting (Opt-In)
+
+When installation errors occur, the installer can help us fix issues faster by allowing you to share diagnostic information. **This is completely optional and opt-in only.**
+
+**Important:** Error reporting ONLY applies to the installation process (`scripts/install.sh`). The voice transcription daemon and runtime components **never** send any data anywhere - they operate 100% offline.
+
+#### How It Works
+
+1. **Installation fails** at any step
+2. **Diagnostic report generated** and saved locally to:
+   ```
+   ~/.local/share/voice-to-claude-cli/error-reports/error-TIMESTAMP.txt
+   ```
+3. **You're asked** (interactive mode only): "Would you like to send this report?"
+4. **Preview available** - You can see the entire report before deciding
+5. **You decide:**
+   - **Yes** → 😊 "Thank you! You're awesome!" → Report uploaded to GitHub gist
+   - **No** → 😢 "Aww, okay... *sniff* We understand!" → Report stays local
+6. **You get a URL** - Share it with us when filing an issue (if you sent it)
+
+#### What's Included in Reports
+
+**Safe technical data:**
+- Operating system and version (e.g., "Ubuntu 22.04")
+- Display server type (e.g., "Wayland" or "X11")
+- Package manager and installation phase
+- Error messages and exit codes
+- Software versions (Python, pip, git)
+- Package availability status
+
+#### What's NEVER Included
+
+**Personal information is sanitized:**
+- ❌ Your username (replaced with `$USER`)
+- ❌ Full file paths (replaced with `~`)
+- ❌ Personal files or data
+- ❌ Environment variables with secrets
+- ❌ IP addresses
+- ❌ Email or contact information
+
+**Example:** See [docs/example-error-report.md](example-error-report.md) for exactly what a report looks like.
+
+### Controlling Error Reporting
+
+#### Environment Variable: `ENABLE_ERROR_REPORTING`
+
+**Default: `prompt`** (ask permission interactively)
+
+**Options:**
+
+1. **Prompt mode (default):**
+   ```bash
+   bash scripts/install.sh
+   # or
+   ENABLE_ERROR_REPORTING=prompt bash scripts/install.sh
+   ```
+   - Interactive: Asks for consent with preview
+   - Non-interactive: Saves report locally, no upload
+
+2. **Always send (for CI/automation):**
+   ```bash
+   ENABLE_ERROR_REPORTING=always bash scripts/install.sh
+   ```
+   - Automatically sends reports without prompting
+   - Useful for testing and CI environments
+   - Still sanitizes all personal data
+
+3. **Never send (privacy-focused):**
+   ```bash
+   ENABLE_ERROR_REPORTING=never bash scripts/install.sh
+   ```
+   - Disables error reporting prompts completely
+   - Reports still saved locally for manual review
+   - No network activity
+
+#### Non-Interactive Mode Detection
+
+The installer automatically detects non-interactive environments (CI/CD, scripts):
+- No prompts shown
+- Reports saved to `~/.local/share/voice-to-claude-cli/error-reports/`
+- Set `ENABLE_ERROR_REPORTING=always` to auto-send in CI
+
+#### Manual Sharing
+
+If you skip sending during installation but later want to share:
+
+1. **Find the report:**
+   ```bash
+   ls -lt ~/.local/share/voice-to-claude-cli/error-reports/
+   ```
+
+2. **Review the report:**
+   ```bash
+   cat ~/.local/share/voice-to-claude-cli/error-reports/error-TIMESTAMP.txt
+   ```
+
+3. **Create a gist manually:**
+   - Visit: https://gist.github.com
+   - Paste report contents
+   - Create public gist
+   - Share URL in GitHub issue
+
+### Why We Ask
+
+Error reports help us:
+- **Fix distribution-specific issues** (package names, availability)
+- **Improve error messages** with better troubleshooting steps
+- **Identify common failure patterns** we didn't anticipate
+- **Test on more platforms** than we have access to
+- **Make installation smoother** for everyone
+
+**We're genuinely grateful for your help - but it's never required!** 🙏
+
 ## Additional Resources
 
 - **[README.md](README.md)** - Main documentation

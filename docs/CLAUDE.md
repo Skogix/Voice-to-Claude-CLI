@@ -16,7 +16,7 @@ Voice-to-Claude-CLI is a **cross-platform** Python application that provides loc
 - **README.md** - User installation guide and quick start
 - **docs/INDEX.md** - Complete documentation navigation and task finder
 - **docs/ADVANCED.md** - User customization options (hotkeys, duration, beeps, notifications, scripting)
-- **docs/HANDOVER.md** - Development session history and architectural decisions (25 sessions)
+- **docs/HANDOVER.md** - Development session history and architectural decisions (26 sessions)
 
 ## Critical Prerequisites
 
@@ -407,7 +407,7 @@ voice-to-claude-cli/
 - **Navigation:** `docs/INDEX.md` (documentation finder)
 - **Developer:** `docs/CLAUDE.md` (this file)
 - **User:** `docs/README.md` (user guide), `docs/ADVANCED.md` (customization)
-- **History:** `docs/HANDOVER.md` (25 sessions)
+- **History:** `docs/HANDOVER.md` (26 sessions)
 - **Testing:** `docs/INSTALLATION_FLOW.md` (7-phase guide), `docs/QUICK_TEST_CHECKLIST.md` (5-min tests)
 - **Status:** `docs/INSTALLATION_STATUS.md` (current state), `docs/PROJECT_STRUCTURE_AUDIT.md` (file inventory)
 

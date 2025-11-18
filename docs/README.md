@@ -75,9 +75,9 @@ curl http://127.0.0.1:2022/health
 
 ## Documentation
 
-- **📚 [Complete Documentation Index](INDEX.md)** - Find everything you need
-- **🔧 [Advanced Usage](ADVANCED.md)** - Customization, hotkeys, scripting
-- **💻 [Developer Guide](CLAUDE.md)** - Architecture, troubleshooting, contributing
+- **📚 [Complete Documentation Index](docs/INDEX.md)** - Find everything you need
+- **🔧 [Advanced Usage](docs/ADVANCED.md)** - Customization, hotkeys, scripting
+- **💻 [Developer Guide](docs/CLAUDE.md)** - Architecture, troubleshooting, contributing
 - **🐛 [GitHub Issues](https://github.com/aldervall/Voice-to-Claude-CLI/issues)** - Report bugs or request features
 
 ## License
